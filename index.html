@@ -1,0 +1,223 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tabungan Harianku</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f1f5f9;color:#1e293b}
+header{background:linear-gradient(135deg,#047857,#34d399);color:white;padding:30px 20px 60px}
+header h1{margin:0 0 10px}
+header p{line-height:1.5}
+main{max-width:700px;margin:-35px auto 20px;padding:0 15px}
+.card{background:white;padding:20px;border-radius:16px;margin-bottom:16px;box-shadow:0 4px 15px #0000000a}
+.label{font-size:13px;color:#64748b}
+.total{font-size:30px;font-weight:bold;color:#047857;margin:12px 0 20px;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.stat{background:#f0faf5;padding:13px;border-radius:10px}
+.stat strong{display:block;margin-top:8px;overflow-wrap:anywhere}
+.progress-bg{height:12px;background:#e2e8f0;border-radius:20px;overflow:hidden;margin:12px 0}
+.progress{height:100%;background:#10b981;width:0}
+h2{font-size:19px;margin:0 0 16px}
+label{display:block;font-size:14px;font-weight:bold;margin:13px 0 7px}
+input{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:15px}
+button{padding:12px;border:0;border-radius:9px;font-weight:bold;cursor:pointer}
+.primary{background:#047857;color:white;width:100%;margin-top:16px}
+.secondary{background:#e8f8ef;color:#047857;width:100%;margin-top:12px}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 0;border-bottom:1px solid #e2e8f0}
+.item:last-child{border:0}
+.nama{font-weight:bold;font-size:14px;overflow-wrap:anywhere}
+.tanggal{font-size:12px;color:#64748b;margin-top:5px}
+.jumlah{color:#047857;font-weight:bold;font-size:14px}
+.hapus{display:block;margin-top:8px;background:#fee2e2;color:#b91c1c;font-size:12px}
+.empty{text-align:center;color:#64748b;padding:20px 0;line-height:1.6}
+footer{text-align:center;padding:15px;color:#64748b;font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+<h1>💰 Tabungan Harianku</h1>
+<p>Menabung sedikit demi sedikit untuk meraih impian!</p>
+</header>
+
+<main>
+<section class="card">
+<div class="label">TOTAL TABUNGAN</div>
+<div class="total" id="total">Rp0</div>
+<div class="stats">
+<div class="stat"><div class="label">🎯 Target</div><strong id="targetTampil">Rp1.000.000</strong></div>
+<div class="stat"><div class="label">📅 Tabungan Hari Ini</div><strong id="hariIni">Rp0</strong></div>
+</div>
+<div class="label">Progres target</div>
+<div class="progress-bg"><div class="progress" id="bar"></div></div>
+<div class="label" id="persen">0% tercapai</div>
+</section>
+
+<section class="card">
+<h2>🎯 Atur Target Tabungan</h2>
+<form id="formTarget">
+<label>Target tabungan (Rp)</label>
+<input type="number" id="target" min="1" placeholder="Contoh: 1000000" required>
+<button class="secondary" type="submit">Simpan Target</button>
+</form>
+</section>
+
+<section class="card">
+<h2>➕ Tambah Tabungan</h2>
+<form id="formTabungan">
+<label>Jumlah uang (Rp)</label>
+<input type="number" id="jumlah" min="1" max="1000000000" placeholder="Contoh: 10000" required>
+<label>Tanggal menabung</label>
+<input type="date" id="tanggal" required>
+<label>Catatan</label>
+<input type="text" id="catatan" maxlength="100" placeholder="Contoh: Uang saku">
+<button class="primary" type="submit">💚 Simpan Tabungan</button>
+</form>
+</section>
+
+<section class="card">
+<h2>📋 Riwayat Tabungan</h2>
+<div id="riwayat"></div>
+</section>
+</main>
+
+<footer>Tabungan Harianku © 2026 🌱</footer>
+
+<script>
+const kunci = "tabungan_harian_v1";
+let data = JSON.parse(localStorage.getItem(kunci) || '{"target":1000000,"riwayat":[]}');
+
+if (!data || !Array.isArray(data.riwayat) || !Number.isFinite(Number(data.target)) || Number(data.target) <= 0) {
+    data = {target:1000000, riwayat:[]};
+}
+
+const rupiah = n => "Rp" + Number(n).toLocaleString("id-ID");
+const hariIni = () => {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0,10);
+};
+
+document.getElementById("tanggal").value = hariIni();
+document.getElementById("tanggal").max = hariIni();
+
+function simpan() {
+    localStorage.setItem(kunci, JSON.stringify(data));
+}
+
+function tampilkan() {
+    const total = data.riwayat.reduce((s,x) => s + x.jumlah, 0);
+    const hari = data.riwayat.filter(x => x.tanggal === hariIni()).reduce((s,x) => s + x.jumlah, 0);
+    const persen = Math.min(100, total / data.target * 100);
+
+    document.getElementById("total").textContent = rupiah(total);
+    document.getElementById("targetTampil").textContent = rupiah(data.target);
+    document.getElementById("hariIni").textContent = rupiah(hari);
+    document.getElementById("target").value = data.target;
+    document.getElementById("bar").style.width = persen + "%";
+    document.getElementById("persen").textContent = persen.toLocaleString("id-ID",{maximumFractionDigits:1}) + "% tercapai";
+
+    const daftar = document.getElementById("riwayat");
+    daftar.replaceChildren();
+
+    if (data.riwayat.length === 0) {
+        const kosong = document.createElement("div");
+        kosong.className = "empty";
+        kosong.textContent = "🐷 Belum ada tabungan. Yuk, mulai menabung hari ini!";
+        daftar.appendChild(kosong);
+        return;
+    }
+
+    [...data.riwayat].sort((a,b) => b.tanggal.localeCompare(a.tanggal)).forEach(x => {
+        const item = document.createElement("div");
+        item.className = "item";
+
+        const kiri = document.createElement("div");
+        const nama = document.createElement("div");
+        nama.className = "nama";
+        nama.textContent = x.catatan || "Tabungan harian";
+
+        const tanggal = document.createElement("div");
+        tanggal.className = "tanggal";
+        tanggal.textContent = x.tanggal.split("-").reverse().join("-");
+
+        kiri.append(nama,tanggal);
+
+        const kanan = document.createElement("div");
+        kanan.style.textAlign = "right";
+
+        const jumlah = document.createElement("div");
+        jumlah.className = "jumlah";
+        jumlah.textContent = "+" + rupiah(x.jumlah);
+
+        const hapus = document.createElement("button");
+        hapus.className = "hapus";
+        hapus.textContent = "🗑 Hapus";
+        hapus.type = "button";
+        hapus.addEventListener("click", () => {
+            if (confirm("Hapus catatan tabungan ini?")) {
+                data.riwayat = data.riwayat.filter(y => y.id !== x.id);
+                simpan();
+                tampilkan();
+            }
+        });
+
+        kanan.append(jumlah,hapus);
+        item.append(kiri,kanan);
+        daftar.appendChild(item);
+    });
+}
+
+document.getElementById("formTarget").addEventListener("submit", e => {
+    e.preventDefault();
+    const target = Number(document.getElementById("target").value);
+    if (!Number.isSafeInteger(target) || target <= 0 || target > 1000000000000) {
+        alert("Masukkan target yang valid.");
+        return;
+    }
+    data.target = target;
+    simpan();
+    tampilkan();
+    alert("Target tabungan berhasil disimpan!");
+});
+
+document.getElementById("formTabungan").addEventListener("submit", e => {
+    e.preventDefault();
+
+    const jumlah = Number(document.getElementById("jumlah").value);
+    const tanggal = document.getElementById("tanggal").value;
+    const catatan = document.getElementById("catatan").value.trim();
+
+    if (!Number.isSafeInteger(jumlah) || jumlah < 1 || jumlah > 1000000000) {
+        alert("Masukkan jumlah tabungan yang valid.");
+        return;
+    }
+
+    if (!tanggal || tanggal < "2000-01-01" || tanggal > hariIni()) {
+        alert("Pilih tanggal yang valid.");
+        return;
+    }
+
+    data.riwayat.push({
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        jumlah: jumlah,
+        tanggal: tanggal,
+        catatan: catatan
+    });
+
+    simpan();
+    tampilkan();
+
+    document.getElementById("formTabungan").reset();
+    document.getElementById("tanggal").value = hariIni();
+    alert("Tabungan berhasil ditambahkan!");
+});
+
+tampilkan();
+</script>
+
+</body>
+</html>
